@@ -36,6 +36,19 @@ To Exit, type `Ctrl-D`.
 
 `nREPL` stands for "network REPL". It is a message-based client-server REPL service. A client implements Read, Print, and Loop. The server handles the Evaluation and can do more such as looking up documentation, inspecting running program etc.
 
+## REPL Phases
+
+A REPL has the following phases:
+
+- `:read-source`
+- `:macro-syntax-check`
+- `:macroexpansion`
+- `:compile-syntax-check`
+- `:compilation`
+- `:execution`
+- `:read-eval-result`
+- `:print-eval-result`
+
 ## Reader
 
 Clojure is defined in terms of the evaluation of data structures and not in terms of the syntax of character streams/files. It is the task of the reader, defined by `read` function, to parse the text and produce the data structure the compiler will see.
