@@ -82,8 +82,8 @@ Clojure 1.7 introduces `reader conditions` using`.cljc` files for portable code 
 Evaluation can occur in many contexts:
 
 - Interactively, in the REPL
-- On a sequence of forms read from a stream, via load / load-file / load-reader / load-string
-- Programmatically, via eval
+- On a sequence of forms read from a stream, via `load` / `load-file` / `load-reader` / `load-string`.
+- Programmatically, via `eval`.
 
 Clojure programs are composed of the following:
 
