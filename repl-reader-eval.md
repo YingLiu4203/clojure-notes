@@ -2,9 +2,9 @@
 
 ## Getting Around in REPLE
 
-REPL is a command-line interface to interact with a running Clojure program.
+REPL is a command-line interface to interact with a running Clojure program. The [REPL resources page](https://clojure.org/guides/repl/annex_community_resources) has links to videos and tutorials to REPL.
 
-When you run `clj` from the command line, there are some commands (defined in [clojure.repl](https://clojure.github.io/clojure/clojure.repl-api.html) available:
+When you run `clj` from the command line, there are some commands (defined in [clojure.repl](https://clojure.github.io/clojure/clojure.repl-api.html). Use `(require '[clojure.repl :refer :all])` to make all commands avaialbel.
 
 - `(source name)`: show the source code of a symbol.
 - `(apropo "something")`: return a seq of all definitions (by name) that match the pattern.
@@ -18,7 +18,7 @@ Special vars:
 - `*1`, `*2`, `*3` are lat, second, and third most recent values.
 - `*e` the last exception.
 
-Additional commands:
+Additional commands from `clojure.java.javadoc` and `clojure.pprint`:
 
 - `(javadoc name)`: show doc of a Java class.
 - `(pprint expr)`: show a pretty formatted value.
@@ -31,6 +31,13 @@ History avagiation
 - Search: Ctrl + R, press Ctrl + R to cycle through the matches, Enter to select one.
 
 To Exit, type `Ctrl-D`.
+
+## Namespace
+
+- `*ns*`: current namespace.
+- `ns foo`: create a new namespace and make it current.
+- `in-ns bar`: switch to a new namespace.
+- `require '[clojure.set :as cset :refere [uniion]]`: importe namespace and var.
 
 ## nREPL
 
