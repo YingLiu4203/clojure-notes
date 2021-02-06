@@ -3,14 +3,13 @@
 ## 1 Basic Command
 
 - Jack in: `ctrl+alt+c ctrl+alt+j`
-
-- Grow/expand slection: `ctrl+w`
-- Select current form: `ctrl+alt+c ctrl+s`
-- Select current top form: `ctrl+alt+w space`
+- Load and evaluate current file: `ctrl+alt+c enter`
 
 - Evaluate current form whe cursor behind a form: `ctrl+enter`
 - Evaluate current top level form: `alt+etner`
 - Dismiss the display of results: `escape`
+- Instrument for debugging: `ctrl+alt+c i`
+
 - Evaluate current form and add result as comment: `ctrl+alt+c c`
 - Evaluate current top form and add result as comment: `ctrl+alt+c space`
 - Evaluate code and replace it in the editor, inline: `ctrl+alt+c r`
@@ -19,7 +18,6 @@
 - Paste the current top-level form to REPL window: `ctrl+alt+c ctrl+alt+space`
 - Copy last evaluation results to buffer: `ctrl+alt+c ctrl+c`
 
-- Load and evaluate current file: `ctrl+alt+c enter`
 - Toggle pretty printing: `ctrl+alt+c p`
 
 ## 2 Paredit
@@ -37,44 +35,49 @@ For visual effect, check [Calva Paredit](https://calva.io/paredit/)
 
 ### 2.1 Navigation
 
-- Forward Sexp: `ctrl+alt+right`
-- Backward Sexp: `ctrl+alt+left`
+- Forward Sexp: `alt+right`
+- Backward Sexp: `alt+left`
 
 - Forward down Sexp: `ctrl+down`
 - Backward down Sexp: `ctrl+alt+up`
 - Forward up Sexp: `ctrl+alt+down`
 - Backward up Sexp: `ctrl+up`
+
 - Foward to list end: `ctrl+end`
 - Backward to list start: `ctrl+home`
 
 ### 2.2 Selecting
 
 - Select the current form, then expan to enclosing forms: `ctrl+w`
-- Shrink selection: `ctrl+alt+w`
+- Shrink selection: `ctrl+shift+w`
 - Select top level form: `ctrl+alt+w space`
-- Select forward sexp: `ctrl+shift+alt+right`
-- Select backward sexp: `ctrl+shift+alt+left`
 
-- Select forward down exp: `ctrl+shift+down`
-- Select backward down exp: `ctrl+shift+alt+down`
-- Select forward up exp: `ctrl+shift+alt+up`
-- Select backward up exp: `ctrl+shift+up`
+Add a `shift` to the same navigation key combination to select:
+
+- Select forward sexp: `shift+alt+right`
+- Select backward sexp: `shift+alt+left`
+
+- Select forward down sexp: `shift+ctrl+down`
+- Select backward down sexp: `shift+ctrl+alt+up`
+- Select forward up exp: `shift+ctrl+alt+down`
+- Select backward up exp: `shift+ctrl+up`
+
 - Select forward to list end: `ctrl+shift+end`
 - select backward to list start: `ctrl+shift+home`
 
 ### 2.3 Editing
 
-- Slurp forward: `ctrl+right`
-- Barf forward: `ctrl+left`
-- Slurp backward: `ctrl+shift+left`
-- Barf backward: `ctrl+shift+right`
+- Slurp forward: `ctrl+alt+right`
+- Barf forward: `ctrl+alt+left`
+- Slurp backward: `shift+ctrl+alt+left`
+- Barf backward: `shift+ctrl+alt+right`
 
 - Splice Sexp: `ctrl+alt+s`
-- Split Sexp: `ctrl+shift+s`
+- Split Sexp: `shift+ctrl+s`
 
 - Join Sexps/Forms: `ctrl+shift+j`
 - Raise Sexp: `ctrl+alt+p ctrl+alt+r`
-- Transpose Sexps/Forms: `ctrl+alt+t`
+- Transpose (swap) Sexps/Forms surrounding the cursor: `ctrl+alt+t`
 
 - Drag Sexp backward: `ctrl+alt+shift+b`
 - Drag Sexp forward: `ctrl+alt+shift+f`
@@ -83,6 +86,8 @@ For visual effect, check [Calva Paredit](https://calva.io/paredit/)
 - Drag Sexp forward up: `ctrl+alt+shift+k`
 - Drag Sexp backward down: `ctrl+alt+shift+j`
 
+- Convolute (swap two outer forms): `ctrl+shift+c`
+
 - Kill Sexp forward: `ctrl+shift+delete`
 - Kill Sexp backward: `ctrl+shift+backspace`
 - Kill list forward: `ctrl+delete`
@@ -90,27 +95,21 @@ For visual effect, check [Calva Paredit](https://calva.io/paredit/)
 - Splice killing list forward: `ctrl+alt+shift+delete`
 - Splice killing list backward: `ctrl+alt+shift+backspace`
 
-- Wrap around with `()`: `ctrl+alt+shift+p`
-- Wrap around with `[]`: `ctrl+alt+shift+s`
-- Wrap around with `{}`: `ctrl+alt+shift+c`
-- Wrap around with `""`: `ctrl+alt+shift+q`
-- Rewrap around with `()`: `ctrl+alt+r ctrl+alt+p`
-- Rewrap around with `[]`: `ctrl+alt+r ctrl+alt+s`
-- Rewrap around with `{}`: `ctrl+alt+r ctrl+alt+c`
-- Rewrap around with `""`: `ctrl+alt+r ctrl+alt+q`
+- Wrap around with `()/[]/{}/""`: `ctrl+alt+shift+p/s/c/q`
+- Rewrap around with `()/[]/{}/""`: `ctrl+alt+r ctrl+alt+p/s/c/q`
 
 ## 3 Output, Test and Format
 
 ### 3.1 REPL output window
 
-REPL history
-
-- up: `alt+up`
-- down: `alt+down`
+- `ctrl+alt+c o`: open the REPL window or open the file of current namespace.
+- `ctrl+alt+c alt+n`: sync to current namespace.
+- `alt+enter`: evaluate expression.
+- `alt+up`: prev in history.
+- `alt+down`: next in history.
+- `cmd + click`: on the filename/symbol to open/peek definition
 
 REPL output is saved to a session-temprary file `.calva/output-window` in the project root.
-
-- Use `cmd + click` on the filename/symbol to open/peek definition
 
 ### 3.2 Test
 
