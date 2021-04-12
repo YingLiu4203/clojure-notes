@@ -5,21 +5,38 @@
 - [Transducer by Rich](https://youtu.be/6mTbuzafcII)
 - [Inside Transducer Video](https://youtu.be/4KqUvG8HPYo)
 
+Some history blogs:
+
+- [Tranducers are Coming](https://cognitect.com/blog/2014/8/6/transducers-are-coming)
+- [Anatomy of a Reducer](https://clojure.org/news/2012/05/15/anatomy-of-reducer)
+- [Reducers](https://clojure.org/news/2012/05/08/reducers)
+
+## Definitions
+
+- `Reducing Function (rf)`: the first parameter of `reduce` funciton. A reducing function is any function that takes an accumulator and a new value and generates a new accumulator: `accumulator * input -> accumulator`. In addition, a reducing function maybe called with no args and return an identity value for its operatoin. `() -> identity-value`.
+- `Transducer`: is a reducing function transformer with a signature of `reducing-function -> reducing-function`, or the expanded form: `(accumulator * input -> accumulator) -> (accumulator * input -> accumulator)`. It is composable.
+- `Step`: A arity-2 function defined in a transducer to process input.
+- `Transducible Process`: A transducible process is defined as a succession of steps where each step ingests an input. The source of the inputs is specific to each process and must choose what to do with the outputs produced by each step.
+
+A transduceer don't care what the reducing funciton is, the accumlator representation, and the source of inputs. Most sequnce function such as `map`, `filter` can create a transducer by applying to a function like `(map f)`.
+
 ## Motivation
 
-A reducing function is any function that takes an accumulator and a new value and generates a new accumulator: `(accumulated-result, input) -> accumulated-result`. A reducing function implementation has the following steps:
+A reducing function implementation has the following steps:
 
 - processing an input with the current accumulated result
 - creating and returning an accumalted result
 
-A fact (may or may not be a problem) of a reducing function is that it couples/fixes sequendce builder: the operation that produces the new accumulated result. That operation could be `conj` to create a new sequnence or a bineary operator such as `+` to create a scalar value. Of course, the initial value will be different for different operations. For `conj`, the initial value could be a `[]`; for `+`, it could be `0`.
+In early days, without `reduce`, a typical implementation of a reducing function has a signature like `fn * sequable -> sequable`. It complects many `how`:
 
-If we add a constraint and a parameter to a reducing function, we can achieve a goal of composing multiple reducing functions to process each element and generate an accumulated result in a single operation.
+- recursion mechanism
+- sequential order navigation
+- laziness (mostly lazy)
+- collection builder/representation
 
-- Constraint: all recuders to be composed take the same accumulate type. This reducing function is actually a transformer.
-- reducing function parameter: a sequence builder to created a result, after applied composed transformers. This is the actual reducing operation.
+You want to decomplect the four things from reducing.
 
-## Goal
+## Goals
 
 Extract the essence of map, filter et al away from the functions that transform sequences/collections, thus they can be used elswhere. Recasting them as process transformations.
 
@@ -48,7 +65,70 @@ A transducer takes a function, wraps it and returns a new step function. Composi
 
 Processes must support `reduced` in case of early termination. It stops supplying input to the step function. Some transducers require state. For example, `take`, `partition-*`.
 
-## An Example
+## A Mental Model
+
+The `reduce` function introduces a generic way to apply a reducing function to a collection. It abstracts the first three items (mechanism, order and laziness) and uses a reducing function to process input and build a new sequence. For example:
+
+```clojure
+(defn reduce-map [f coll]
+  (reduce (fn [acc v]
+            (conj acc (f v)))
+          []
+          coll))
+```
+
+A collection or anything that you can `reduce` is called `reducible`. A reducing function in `core.reducer` has a signature like `fn * reducible -> reducible`.
+
+This reducing function couples/fixes sequence builder: the operation that produces the new accumulated result. That operation could be `conj` to create a new sequnence or a bineary operator such as `+` to create a scalar value. Of course, the initial value will be different for different operations. For `conj`, the initial value could be a `[]`; for `+`, it could be `0`. The initial value for `reduce` depends on the sequnce builing operation.
+
+The sequence builder `conj` and `+` are also reducing functions. Extracting this reducing function by taking it as a parameter of a reducer, the reducer has a signature of `reducing-function -> reducing-function`.
+
+```clojure
+;; mental model of the map reducer
+;; use rf for reducing-function, f is from a transducer
+(fn [rf]
+  (fn [acc v]
+    (rf acc (f v))))
+```
+
+The reducer is decompleted from both representation and order. With reducer, you can define a transducer as `fn -> reducer`. A transducer function takes a transformation function parameter and returns a reducer. Here the `fn` is the transformation part of the `transducer`. For example:
+
+```clojure
+(defn map-transducer [f]
+  (fn [rf] ;; the map reducer
+    (fn [acc v]
+      (rf acc (f v)))))
+```
+
+The reducer implementation is transducer-specific. A reducer gets the transformation function `f` from its transducer and gets the reducing function from its caller. The reducer returns a reducing function. In its reducing funciton implementation, the input reducing function is treated as the next step that is called after the processing of the new input by applying `f` to the input.
+
+It is an important detail that the reducer calls the reducing function after applying `f` to its input. It is the reason that a composed transducer works in the reversed order of `comp` function.
+
+If you expand a tranducer, you get something like `[f, rf, acc, v] -> result`. The first parameter `f` is provided at call time to customize the transformation, the reducing function is provided by a process such as `transduce`/`chan` that calls `reduce` eventually. The `reduce` applies `transducer(f)(rf)` to a reducible. Mentally you can think a transducer having a signature of `fn * reducible -> reducible`.
+
+## What You Get
+
+The transducer decompletes the following hows:
+
+- How: mechanism - functional transformation of reducing function
+- How: order - doesn’t know
+- How: laziness - doesn’t know
+- How: representation - doesn’t build anything
+
+The call of `(transducer f)` returns a `reducer` that is a `transformation of reducing function`. It works for many sequence functions such as Core sequence functions' collectionless arity now returns a transducer: `map`, `mapcat`, `filter`, `remove`, `take`, `take-while`, `drop`, `drop-while`, `take-nth`, `replace`, `partition-by`, `partition-all`, `keep`, `keep-indexed`, `cat`, `dedupe`, `random-sample` etc. It is general that the tansformation could be 1:1, contractive or expansive.
+
+The `reduce` process is based on `foldl` that uses an accumulator and is eager and serail. Using different processes such as `fold` brings parallel processing by using JVM's fork-join thread pool.
+
+It can be composed and can be used in different processes.
+
+- reduce with a transformation (no laziness, just a loop): `(transduce xform + 0 data)`.
+- construct a new collection: `into [] xf data)`.
+- lazily transform the data (one lazy sequence, not three as with composed sequence functions): `(sequence xform data)`.
+- build one collection from a transformation of another, again no laziness: `(into [] xform data)`.
+- create a recipe for a transformation, which can be subsequently sequenced, iterated or reduced: `(eduction xform data)`.
+- use the same transducer to transform everything that goes through a channel: `(chan 1 xform)`.
+
+## Examples
 
 ```clojure
 (defn trans-mapping [f]
@@ -124,35 +204,46 @@ A transducer is a function that takes a reducing function and returns a new redu
 
 ```clojure
 ;; template
-(defn template-transducer [xf]
+(defn template-transducer [rf]
     (fn
-      ([] (xf)) ;; Setup
-      ([result input] (xf result input)) ;; Process, logic here
-      ([result] (xf result)))) ;; result
+      ([] (rf)) ;; Setup
+      ([result input] (rf result input)) ;; Process, logic here
+      ([result] (rf result)))) ;; result, may clean/up or transform result
 
 (defn mapping
   [f]
-  (fn [xf]
+  (fn [rf]
     (fn
-      ([] (xf))
-      ([acc] (xf acc))
-      ([acc v]
-       (xf acc (f v))))))
+      ([] (rf))
+      ([acc] (rf acc))
+      ([acc v] (rf acc (f v))))))
 
 
 (defn filtering
   [f]
-  (fn [xf]
+  (fn [rf]
     (fn
-      ([] (xf))
-      ([acc] (xf acc))
+      ([] (rf))
+      ([acc] (rf acc))
       ([acc v]
        (if (f v)
-         (xf acc v)
+         (rf acc v)
          acc)))))
 ```
 
-Core sequence functions' collectionless arity now returns a transducer: `map`, `mapcat`, `filter`, `remove`, `take`, `take-while`, `drop`, `drop-while`, `take-nth`, `replace`, `partition-by`, `partition-all`, `keep`, `keep-indexed`, `cat`, `dedupe`, `random-sample`...
+The multi-arity functions:
+
+- Arity-0 (init) is used to provide initial value from the reducer when the transducer is the last composed transducer (bottom transducer).
+- Arity-1 (completion) is used for completion to provide final result from the reducing function.
+- Arity-2 (step) is used to process each input value. It must preseve the accumulated values and optionally process new input.
+
+Clojure has a mechanism for specifying early termination of a reduce:
+
+- `reduced` - takes a value and returns a reduced value indicating reduction should stop.
+- `reduced?` - returns true if the value was created with reduced.
+- `deref` or `@` can be used to retrieve the value inside a reduced.
+
+Use `volatile!` to store state in the closure of a transducer. It has better performance than `atom`.
 
 ## `transduce`
 
@@ -179,11 +270,10 @@ An exmaple:
 (transduce xform string-rf "Hello World")
 ```
 
-## Summary
+## Transducible Processes
 
-- All transducers and the reducing function have the compatible input and output types.
-- The reducing function provides the initial value and the final result from the final accumulated values.
-- Each transducer produces a new result value from current accumulated value and a input. the new result value is used as an input accumulated value for the next transducer.
-- Arity-0 transducer is used to provide initial value from the reduceer when the transducer is the last composed transducer (bottom transducer).
-- Arity-1 transducer is used for completion to provide final result from the reducing function. It is called in each transducer when process is done.
-- Arity-2 transducer is used to process each input value. It must preseve the accumulated values and optionally process new input.
+A transducible process must follow the following rules:
+
+- If a step function returns a reduced value, the transducible process must not supply any more inputs to the step function. The reduced value must be unwrapped with deref before completion.
+- A completing process must call the completion operation on the final accumulated value exactly once.
+- A transducing process must encapsulate references to the function returned by invoking a transducer - these may be stateful and unsafe for use across threads.
