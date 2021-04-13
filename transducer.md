@@ -2,8 +2,9 @@
 
 - [Tranducers Doc](https://clojure.org/reference/transducers)
 - [Mental Model](https://functional.works-hub.com/learn/a-mental-model-for-thinking-about-clojures-transducers-6baba)
-- [Transducer by Rich](https://youtu.be/6mTbuzafcII)
-- [Inside Transducer Video](https://youtu.be/4KqUvG8HPYo)
+- [Transducer by Rich](https://youtu.be/6mTbuzafcII): Usage and insisghts by Rich.
+- [Inside Transducer Video](https://youtu.be/4KqUvG8HPYo): Rich's another talk.
+- [Clojure Tranducers](https://youtu.be/-hwWZkqQO9w): a good explanation.
 
 Some history blogs:
 
