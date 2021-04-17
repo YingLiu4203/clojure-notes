@@ -45,3 +45,36 @@ Naming conventions to avoid collisions in db:
 - Singleton components: consistent ident for singleton UI elements. For example: `[:component/id ::Component]` where `::Component` is the keywrodized version of the fully-qualified component name.
 
 In Fulcro, the UI pulls data from client database and render the components. The mutations evovle the database to a new version.
+
+## Getting Started
+
+### Installation
+
+Dev tools include Fulcro inspect extensiion for Chrome, Binaryage dev lib.
+Chrome setting: Console -> Enable custom formatters, Network -> Disable Cache (when Devtools is open).
+
+Fulcro template contains boilerplate on things such as server configuration, CSRF, testing, better error message formatting, etc.
+
+Install JDK, Clojure CLI tools and Node.
+
+```zsh
+mkdir app
+cd app
+mkdir -p src/main src/dev resources/public
+npm init
+#... answer the questions or just take defaults ...
+npm install shadow-cljs react react-dom --save
+```
+
+Create `deps.edn`:
+
+```clojure
+{:paths   ["src/main" "resources"]
+ :deps    {org.clojure/clojure    {:mvn/version "1.10.3"}
+           com.fulcrologic/fulcro {:mvn/version "3.4.21"}}
+
+ :aliases {:dev {:extra-paths ["src/dev"]
+                 :extra-deps  {org.clojure/clojurescript   {:mvn/version "1.10.844"}
+                               thheller/shadow-cljs        {:mvn/version "2.12.4"}
+                               binaryage/devtools          {:mvn/version "1.0.3"}}}}}
+```
