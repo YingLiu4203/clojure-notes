@@ -9,10 +9,10 @@ This is a study note of [Fulcro](https://book.fulcrologic.com/).
 Fulcro is a full-stack application programming system that is graph-centric and uses CQRS architecture style.
 
 - Data models are graphs.
-- UI trees are graphs that can be fed from graph queries.
-- User operations are command data.
 - Graph data are normalized with a centralized managing/caching/trasanction processing systems.
+- UI trees are graphs of UI components that are functions transforming the graph database into the UI.
 - UI components are state mahcines that support actor model.
+- UI component operations are mutation data (in a CQRS style) that are processed by transact systems for local db, remote service and error handling.
 - Subscription model is simply a query or a push with the backend from this centralized client database.
 
 Fulcro is written in CLJC thus is able to setup and run in both JS or JVM. It uses [EQL: EDN Query Language](https://edn-query-language.org/) to query data in a declarative way. It uses the [pathom](https://github.com/wilkerlucio/pathom) library to process EQL requests and reshape any particular schema into the required graph model for clients.
@@ -31,5 +31,17 @@ Thus in Fulcro, data flows in and out via graph queries and mutations. It manage
 - pure rendering: simple logic.
 - data driven: for both query and mutation.
 - client-side graph database: a simple, persistent, graph map.
+  - Items are joined into a graph using an `ident`: a tuple of a table name and a key. For example `:person/by-id 4]`. `ident` is the same used in query and mutation of the db.
+  - An `ident` appears in a vector meaning a `to-many` relation.
+  - Graph can have loops.
+  - The db drives UI.
+
+Naming conventions to avoid collisions in db:
+
+- UI only props: `:ui/name`.
+- Tables: `:entity-type/index-indicator`. For example: `:person/id`.
+- Root props: `:root/prop-name`
+- Node props: `:entity-type/property-name`. For example: `:person/name` or `:graph/data`.
+- Singleton components: consistent ident for singleton UI elements. For example: `[:component/id ::Component]` where `::Component` is the keywrodized version of the fully-qualified component name.
 
 In Fulcro, the UI pulls data from client database and render the components. The mutations evovle the database to a new version.
