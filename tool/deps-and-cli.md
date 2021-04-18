@@ -1,28 +1,27 @@
 # Deps and CLI
 
-Resources:
+This article summarizes the Clojure CLI tools from the following resources:
 
 - [The REPL and main entry points](https://clojure.org/reference/repl_and_main)
 - [Deps and CLI](https://clojure.org/reference/deps_and_cli)
+- [What are the Clojure tools](https://betweentwoparens.com/what-are-the-clojure-tools)
 
 ## 1 Overview
 
-Clojure runs on JVM that has two capabilities:
+Clojure CLI tools or `tools-deps` are just an umbrella term consisting of following parts to resolve/download dependendencis and build classpath to run a program in the JVM.
 
-- the `classpath` to invoke JVM processes and/or `URLClassLoader`s.
-- transitive dependency download and resolution from Maven repositories.
-
-Clojure provides
-
-- `tools.deps.alpha` is a library for resolving dependency graphs and building classptaths that can utilize both Maven or other providers of code or artifacts. It doesn't provide building and project management.
-- CLI tools `clojure` and `clj` use the capability to resolve dependencies and run programs.
+- `deps.edn` is an edn configuration file used to configure dependencies.
+- `tools.deps.alpha` is a library that reads `deps.edn` and resolves dependency graphs and build classptaths that can utilize both Maven or other providers of code or artifacts. It doesn't provide build and project management.
+- `clojure` or `clj` are bash scripts to run Clojure programs on the JVM. `clj` wraps `clojure` (another bash script) with `readline` support to make it easier to type manually in REPL. Under the hood, `clojure` uses `deps.edn` and `tools.deps.alpha`.
 - System-specific installers for downloading the tools.
 
-You use `clojure` or `clj` to run Clojure programs on the JVM. `clj` ues `clojure` but has extra support for use as a REPL. They define classpaths, execution environment, the `main` class, ang args. The `deps.edn` file tells Clojure the source code path and what libs you use. You often use maps to define aliases that are keywords that name data structures.
+There are many [build or project management tools](https://github.com/clojure/tools.deps.alpha/wiki/Tools) based on the above CLI tools.
+
+You install the tools via `brew install clojure/tools/clojure`. It shows as `clojure` in `brew info` after installation.
 
 ## 2 CLI
 
-Both `clj` and `clojure` are CLI tools that take `[clj-opt*]` and `[exec-opt]`. `clj` starts a REPL using `clojure` that executes `clojure.main` to run a REPL or execute a function/script.
+Essentially the command is `java [java-opt*] -cp classpath clojure.main [clj-opt*] [main-opt] [arg*]`. `clj` starts a REPL using `clojure` that executes `clojure.main` to run a REPL or execute a function/script.
 
 To execute a function, use `clojure [clj-opt*] -X[aliases] [a/fn] [kpath v]*`. The `-X` is configured with an arg map with `:exec-fn` and `:exec-args` keys. The map is stored as an alias in `deps.edn`. The `[kpath v]*` can be a single key or a vector of keys that is used to `assoc-in` to the `:exec-args` map.
 
