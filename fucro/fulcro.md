@@ -78,3 +78,23 @@ Create `deps.edn`:
                                thheller/shadow-cljs        {:mvn/version "2.12.4"}
                                binaryage/devtools          {:mvn/version "1.0.3"}}}}}
 ```
+
+Add a `shadow-cljs.edu` as below:
+
+```clojure
+{:deps     {:aliases [:dev]}
+ :dev-http {8000 "classpath:public"}
+ :builds   {:main {:target     :browser
+                   :output-dir "resources/public/js/main"
+                   :asset-path "/js/main"
+                   :modules    {:main {:init-fn app.client/init
+                                       :entries [app.client]}}
+                   :devtools   {:after-load app.client/refresh
+                                :preloads   [com.fulcrologic.fulcro.inspect.preload]}}}}
+```
+
+- The top-level `dev-http` server will cause shadow to start a dev web server on a specified port and serves files from the specified directory. In this case, `resources` is in class path defined in `deps.edn` and the folder is `resources/public` directory.
+- The `:modules` section configures what code gets pulled into a given build.
+- The `:entries` are entry-point namespaces that shadow will foullow requires to build the project.
+- The `init-fn` are code to setup application on load.
+- The `after-load` are code to trigger UI refreshs on hot code reload.
