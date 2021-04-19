@@ -210,3 +210,145 @@ To use a component, you need a component factory, the convention is to use `ui-`
   (dom/div
     (ui-person {:person/name "Joe" :person/age 22})))
 ```
+
+## 4 Feeding the Data Tree
+
+### 4.1 Initial State
+
+Fulcro allows you to co-locate the initial desired part of the data tree with the component that uses it. Fulcro pulls this data into the database when the application first mounts -- you need to reload browser if there is a change in initial state. The `defsc` macro takes an `{:initial-state (fn ...)}`. For example:
+
+```clojure
+(defsc Person [this {:person/keys [name age]}]
+  {:initial-state (fn [{:keys [name age] :as params}] {:person/name name :person/age age}) }
+  (dom/li
+    (dom/h5 (str name "(age: " age ")"))))
+
+(def ui-person (comp/factory Person {:keyfn :person/name}))
+
+;; call the initial state function
+(comp/get-initial-state Person {:name "Sally" :age 32})
+```
+
+In the above code, the value of `:initial-state` is a function that is called by `comp/get-initial-state Component params` in composition parent. `comp/get-initial-state` fetchs initial state given a component and parameters of initial state function. The initial state becomes part of initial application database. The creation and use only requires local reasoning.
+
+Use `(com.fulcrologic.fulcro.application/current-state app.application/app)` ot check the current application state. It is available in the DB tab of Fulcro inspect dev tool.
+
+### 4.2 Co-located Query
+
+The queries on components describe what data the component wants from the database. The co-located query sets up data access for both the client and server with the benefit of local reasoning and composition. Like the UI and data, queries form a tree that starts with a join. A join is a map with a single entry whose key is the node keyword. Node data is represented as a vector that is relative to the current node. A map in a vector represents a join of a subquery and must have another vector to represent data of the subquery. For example:
+
+```cloure
+[{:friends  ; this is a JOIN
+    [:list/label
+      {:list/people ; JOIN
+         [:person/name :person/age]}]}]
+```
+
+Joins are automatically to-one if the data found in the state is a singular, and to-many if the data found is a vector. It is recommended to use keyword with namespace.
+
+In a component, the query is a vector that represent data to be feed by its parent. A parent calls `com/get-query` on it child components. For exmaple:
+
+```clojure
+;; query for Person
+{:query [:person/name :person/age]}
+
+;; query for PersonList
+{:query [:list/label {:list/people (comp/get-query Person)}]}
+
+;; for the root that has two PersonList
+{:query [{:friends (comp/get-query PersonList)}
+         {:enemies (comp/get-query PersonList)}]}
+```
+
+The queries are composed from bottom all the way to the root.
+
+There is a global client database but each component queries only the local portion of its data. Local reasoning stays. The local database is stored in an atom. The application state can evolve consistently with the UI components.
+
+### 4.3 Passing Callbacks to Child Components
+
+A component definition in `defsc` has an additional paramter that you can desconstruct (or use `(comp/get-computed this)`) to use the callback passed from its parent. It is useful when a parent does something for its children. For example, a component composed as a list item has a delete button. It should call its parent to perform action because the component knows nothing about its parent.
+
+To not skip the rendering of the parent, either use `comp/computed c {:key fn}` or `comp/computed-factory`.
+
+### 4.4 Transaction
+
+All changes to the client db should go through Fulcro transaction system. All changes are represented as operation data. You use namespaced operation name to identify an operation. It is like `` (comp/transact! this `[(ops/delete-person {:list-name ~name :person ~person})]) ``. The unquote is used to pass operation data to the transaction system.
+
+The `defmutation` macro returns a function-like object that resturs itself as data. If you can require the mutation namespace without causing circular references, then you can just "call" the mutation within the transaction as-if it were a function (avoiding quoting). Otherwise, you must quote it. If the `api/delete-person` is defined with `defmutation`, it can be invoked as `(comp/transact! this [(api/delete-person {:list-name name :person person})])`. The call of `(api/delete-person {:list-name name :person person})` generates `(api/delete-person {:list-name ...})` with varirables replaced with their values.
+
+A good practice is to put client mutation in `.cljs` file and server mutation in `.clj` file.
+
+A mutation definition looks like a function. It can have a docstring and a single argument `params`. The `params` is a map that can be constructured. The body is like `letfn` with some pre-established names such as `action`. Below is an example:
+
+```clojure
+(ns app.mutations
+  (:require [com.fulcrologic.fulcro.mutations :as m :refer [defmutation]]))
+
+(defmutation delete-person
+  "Mutation: Delete the person with `name` from the list with `list-name`"
+  [{:keys [list-name name]}] ; the mutation arguments
+  (action [{:keys [state]}] ...)) ; the action with the app-state atom as an argument
+```
+
+### 4.5 Data Normalization
+
+In a graph db, a reference can have to-many arity. A foreign reference is represented as `[TABLE ID]`, it is called an `ident`. A table is an entity that is identified by a type-centric ID such as `:person/id` or `:account/id`. The following is a normalized graph db:
+
+```clojure
+;; The domain data
+{:PersonList { :friends { :id :friends
+                          :label "Friends"
+                          :people #{1, 2} }}
+ :Person { 1 {:id 1 :name "Joe" }
+           2 {:id 2 :name "Sally"}}}
+
+;; the Fandom graph data
+{ :list/id
+  { :friends
+    { :list/id :friends
+      :list/label "Friends"
+      :list/people [[:person/id 1] [:person/id 2]]}}
+
+  :person/id { 1 {:person/id 1 :person/name "Joe" }
+               2 {:person/id 2 :person/name "Sally"}}}
+```
+
+In the graph data model, `:list/id` and `person/id` are used two times: one as the table name and one as a table property. Their values are repeated too: one as id for each entity and one as the entity's prop value.
+
+To use the automatic normalization provided by Fulcro, you need to set `:ident` optioin for each component. It takes a function to get thte `ident` from its props. For example: `{:ident (fn [] [:person/id (:person/id props)]) }`
+
+### 4.6 Mutation on a Normalized Db
+
+With normalized db, you can reomve a foreign key from a Table entry, instead of removing an entity from a global tree. This is not only easier to code, but it is local: independent of the shape of the UI tree.
+
+Fulcro’s `com.fulcrologic.fulcro.algorithms/merge` namespace includes tools for merging and managing normalized data and includes some helpers for dealing with lists of idents. Mutation "helpers" in fulcro are functions that work against a plain map (normalized app database) so that they can be used easily in `swap!`. By convention these functions have a `*` suffix, and often have mutation versions that do not have the suffix.
+
+A mutation example is as below:
+
+```clojure
+(ns app.mutations
+  (:require
+    [com.fulcrologic.fulcro.mutations :as m :refer [defmutation]]
+    [com.fulcrologic.fulcro.algorithms.merge :as merge]))
+
+(defmutation delete-person
+  "Mutation: Delete the person with `:person/id` from the list with `:list/id`"
+  [{list-id   :list/id person-id :person/id}]
+  (action [{:keys [state]}]
+    (swap! state merge/remove-ident* [:person/id person-id] [:list/id list-id :list/people])))
+```
+
+The `remove-ident*` mutation helper does just that: It removes an ident from a list of idents. The arguments are the ident to remove and the path to the list of idents that you want to remove it from. Below is an example using the mutation:
+
+```clojure
+(defsc PersonList [this {:list/keys [id label people] :as props}] (1)
+  ...
+  (let [delete-person (fn [person-id]
+    (comp/transact! this [(api/delete-person {:list/id id :person/id person-id})]))]
+```
+
+### 4.7 How Automatic Normalization Works
+
+When you compose query via `comp/get-query`, for each component's query fragment, it adds the component name as the query meta data. For example `(meta (com.fulcrologic.fulcro.components/get-query app.ui/PersonList))` returns `{:component app.ui/PersonList, :queryid "app.ui/PersonList"}`.
+
+Fulcro has a function called `com.fulcrologic.fulcro.algorithms.normalize/tree→db` that walks the data tree and queries together. When it reach a data node that matches a component's query and `ident` value, it replaces the data with its ident.
