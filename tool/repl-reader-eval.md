@@ -1,6 +1,6 @@
 # REPL, Reader and Evaluation
 
-## Getting Around in REPLE
+## Getting Started in REPL
 
 REPL is a command-line interface to interact with a running Clojure program. The [REPL resources page](https://clojure.org/guides/repl/annex_community_resources) has links to videos and tutorials to REPL.
 
