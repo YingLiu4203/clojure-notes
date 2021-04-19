@@ -352,3 +352,101 @@ The `remove-ident*` mutation helper does just that: It removes an ident from a l
 When you compose query via `comp/get-query`, for each component's query fragment, it adds the component name as the query meta data. For example `(meta (com.fulcrologic.fulcro.components/get-query app.ui/PersonList))` returns `{:component app.ui/PersonList, :queryid "app.ui/PersonList"}`.
 
 Fulcro has a function called `com.fulcrologic.fulcro.algorithms.normalize/tree→db` that walks the data tree and queries together. When it reach a data node that matches a component's query and `ident` value, it replaces the data with its ident.
+
+## 5 Remote Data
+
+Fulcro uses [transit](https://github.com/cognitect/transit-clj) as the over-the-wire protocol for network traffic: all EQL requests and responses. To use Pathom as the EQL server, add following deps:
+
+```clojure
+com.wsscode/pathom     {:mvn/version "2.3.1"}
+com.taoensso/timbre    {:mvn/version "5.1.2"} ; log
+ring/ring-core         {:mvn/version "1.9.2"} ; core http
+http-kit/http-kit       {:mvn/version "2.5.3"} ; http server
+```
+
+### 5.1 Resolver
+
+Resolvers are defined to expect some particular inputs, and declare what they can produce. They are always called with some context (stored in an `env` parameter) and some optional inputs that match the expected inputs.
+
+- `::pc/input #{:person/id}`: the input is a set of table ids.
+- `::pc/output [:person/name]`: the output is a query. It augments the known context and can be used to chain lookups across resolvers to fulfill a complete query.
+
+Following are some resolver examples:
+
+```clojure
+(pc/defresolver person-resolver [env {:person/keys [id]}]
+  {::pc/input  #{:person/id}
+   ::pc/output [:person/name :person/age]}
+  (get people-table id))
+
+;; Given a :list/id, this can generate a list label and the people
+;; in that list (but just with their IDs)
+(pc/defresolver list-resolver [env {:list/keys [id]}]
+  {::pc/input  #{:list/id}
+   ::pc/output [:list/label {:list/people [:person/id]}]}
+  (when-let [list (get list-table id)]
+    (assoc list
+      :list/people (mapv (fn [id] {:person/id id}) (:list/people list)))))
+
+(pc/defresolver friends-resolver [env input]
+  {::pc/output [{:friends [:list/id]}]}
+  {:friends {:list/id :friends}})
+
+(pc/defresolver enemies-resolver [env input]
+  {::pc/output [{:enemies [:list/id]}]}
+  {:enemies {:list/id :enemies}})
+```
+
+### 5.2 Load Data
+
+It is very important to remember that our application database is completely normalized, so anything we’d want to put in that application state will be at most 3 levels deep (the table name, the ID of the thing in the table, and the field within that thing). The three basic loading scenarios are:
+
+- Load something into the root of the application state (root prop).
+- Load a tree and normalize it into tables.
+- Target a loaded tree to "start" at some specific edge in the graph.
+
+`com.fulcrologic.fulcro.data-fetch/load!` is commonly used to load data. To use it, add remote support to `app.applicatoin`:
+
+```clojure
+(ns app.application
+  (:require
+    [com.fulcrologic.fulcro.application :as app]
+    [com.fulcrologic.fulcro.networking.http-remote :as http]))
+
+(defonce app (app/fulcro-app
+              {:remotes {:remote (http/fulcro-http-remote {})}}))
+```
+
+then add initial load to `client.cljs`:
+
+```clojure
+(defn ^:export init []
+  (app/mount! app ui/Root "app")
+  (df/load! app :friends ui/PersonList)
+  (df/load! app :enemies ui/PersonList)
+  (js/console.log "Loaded"))
+```
+
+### 5.3 Mutations
+
+Create a `src/main/app/mutations.clj` file with the following code
+
+```clojure
+(ns app.mutations
+  (:require
+    [app.resolvers :refer [list-table]]
+    [com.wsscode.pathom.connect :as pc]
+    [taoensso.timbre :as log]))
+
+(pc/defmutation delete-person [env {list-id   :list/id
+                                    person-id :person/id}]
+  {::pc/sym `delete-person}
+  (log/info "Deleting person" person-id "from list" list-id)
+  (swap! list-table update list-id update :list/people (fn [old-list] (filterv #(not= person-id %) old-list))))
+
+(def mutations [delete-person])
+```
+
+The server and client should have the same operation name and namespace. Then add it to the `resolvers` in `parser.clj`.
+
+The client side is simple -- just add one line to the `defmutation delete-person` function in `src/main/app/mutations.cljs`: `(remote [env] true)`. The function calls local action and remote mutation. Here the `remote` is the name of a remote server, default is `remote`.
