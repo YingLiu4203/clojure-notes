@@ -46,9 +46,9 @@ Naming conventions to avoid collisions in db:
 
 In Fulcro, the UI pulls data from client database and render the components. The mutations evovle the database to a new version.
 
-## Getting Started
+## 2 Getting Started
 
-### Installation
+### 2.1 Installation
 
 Dev tools include Fulcro inspect extensiion for Chrome, Binaryage dev lib.
 Chrome setting: Console -> Enable custom formatters, Network -> Disable Cache (when Devtools is open).
@@ -66,7 +66,9 @@ npm init
 npm install shadow-cljs react react-dom --save
 ```
 
-Create `deps.edn`:
+### 2.2 Configuration
+
+Create `deps.edn` for Clojure dependencies:
 
 ```clojure
 {:paths   ["src/main" "resources"]
@@ -79,7 +81,7 @@ Create `deps.edn`:
                                binaryage/devtools          {:mvn/version "1.0.3"}}}}}
 ```
 
-Add a `shadow-cljs.edu` as below:
+Add a `shadow-cljs.edn` for ClojureScript:
 
 ```clojure
 {:deps     {:aliases [:dev]}
@@ -98,3 +100,113 @@ Add a `shadow-cljs.edu` as below:
 - The `:entries` are entry-point namespaces that shadow will foullow requires to build the project.
 - The `init-fn` are code to setup application on load.
 - The `after-load` are code to trigger UI refreshs on hot code reload.
+
+### 2.3 HTML Root File
+
+Creat `resources/public/index.html` as the following:
+
+```html
+<html>
+  <meta charset="utf-8" />
+  <body>
+    <div id="app"></div>
+    <script src="/js/main/main.js"></script>
+  </body>
+</html>
+```
+
+### 2.4 Application Code
+
+Create `src/main/app/client.cljs` as below:
+
+```clojure
+(ns app.client
+  (:require
+    [com.fulcrologic.fulcro.application :as app]
+    [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
+    [com.fulcrologic.fulcro.dom :as dom]))
+
+(defonce app (app/fulcro-app))
+
+(defsc Root [this props]
+  (dom/div "TODO"))
+
+(defn ^:export init
+  "Shadow-cljs sets this up to be our entry-point function. See shadow-cljs.edn `:init-fn` in the modules of the main build."
+  []
+  (app/mount! app Root "app")
+  (js/console.log "Loaded"))
+
+(defn ^:export refresh
+  "During development, shadow-cljs will call this on every hot reload of source. See shadow-cljs.edn"
+  []
+  ;; re-mounting will cause forced UI refresh, update internals, etc.
+  (app/mount! app Root "app")
+  ;; As of Fulcro 3.3.0, this addition will help with stale queries when using dynamic routing:
+  (comp/refresh-dynamic-queries! app)
+  (js/console.log "Hot reload"))
+```
+
+### 2.5 Build and Run the App
+
+Run the command `npx shadow-cljs watch main` and you should see HTML page at `http://localhost:8000`.
+
+The `shadow-cljs` server runs on port `9630` and the nREPL runs on `58403`. You can use VS code to connect to this nREPL. You can connect to the `shadow-cljs` nREPL or application nREPL. The `nREPL` button at the bottom left allows you to switch.
+
+## 3 UI Component
+
+The `defsc` macro create React components. Use `{:use-hook? true}` to create functional components. These components are augmented with Fulcro's data management and render refresh.
+
+### 3.1 Render
+
+The `com.fulcrologic.fulcro.dom` has factoryfunctions to create DOM elements. The following is a template:
+
+```clojure
+(defsc ComponentName
+  [this props] ; parameters. Available in body, and in *some* of the options
+  ; optional:  { ...options... }
+  (dom/div {:className "a" :id "id" :style {:color "red"}}
+    (dom/p "Hello")))
+```
+
+The DOM element functions allow class names and IDs to be written in various forms for convenience. The following are all equivalent:
+
+```clojure
+(dom/div {:id "id" :className "x y z" :style {:color "red"}} ...)
+(dom/div :.x#id {:className "y z" :style {:color "red"}} ...)
+(dom/div :.x.y.z#id {:style {:color "red"}} ...)
+(dom/div :.x#id {:classes ["y" "z"] :style {:color "red"}} ...)
+```
+
+If you’re writing your UI in CLJC files then you need to make sure you use a conditional reader to pull in the proper server DOM functions for Clojure:
+
+```clojure
+(ns app.client
+  (:require #?(:clj [com.fulcrologic.fulcro.dom-server :as dom]
+               :cljs [com.fulcrologic.fulcro.dom :as dom]))
+;;... the actual code is the same as befor
+```
+
+### 3.2 Props
+
+In Fulcro you will usually use props for most data. You can get props by calling `comp/props` on this, or by destructuring in the second argument of `defsc`.
+
+### 3.3 Component Factory
+
+To use a component, you need a component factory, the convention is to use `ui-` prefix for the factory. Then use the factory to create a component. For example:
+
+```clojure
+; a component with props
+(defsc Person [this {:person/keys [name age]}]
+  (dom/div
+    (dom/p "Name: " name)
+    (dom/p "Age: " age)))
+
+; factory
+(def ui-person (comp/factory Person))
+
+; use
+(defsc Root [this props]
+  (dom/div
+    (ui-person {:person/name "Joe" :person/age 22})))
+```

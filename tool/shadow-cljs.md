@@ -82,3 +82,7 @@ Use `:compiler-options` for compiler options. For example, `{:compiler-options {
 
 - A restricted set of config options can be added to `~/.shadow-cljs/config.edn` which will then apply to all projects built on this users machine.
 - You can declare npm dependencies directly by including a `deps.cljs` with `:npm-deps` in your project (eg. `src/main/deps.cljs`). You can also provide extra `:foreign-libs` definitions here. They won’t affect shadow-cljs but might help other tools.
+
+## 4 VS Code Integration
+
+Since Calva uses the `cider-nrepl` middleware for Clojure and `Piggieback` for ClojureScript, you need to include following dependencies in `~/.shadow-cljs/config.edn` or `shadow-cljs.edn`: `cider/cider-nrepl {:mvn/version "0.25.5"} cider/piggieback {:mvn/version "0.5.2"}`.
