@@ -1,8 +1,10 @@
 # REPL, Reader and Evaluation
 
+> > > Fundamentally, the reason programmers use the REPL for all these tasks is always the same: because they want a mix of automation and improvisation that can be provided neither by fully manual tools (such as dashboard, consoles, etc.) nor by fully automated ones (such as scripts), while keeping their workflow focused in one full-featured programming environmen. [Programming at the REPL](https://clojure.org/guides/repl/introduction)
+
 ## Getting Started in REPL
 
-REPL is a command-line interface to interact with a running Clojure program. The [REPL resources page](https://clojure.org/guides/repl/annex_community_resources) has links to videos and tutorials to REPL.
+REPL is a command-line interface to interact with a running Clojure program.
 
 When you run `clj` from the command line, there are some commands (defined in [clojure.repl](https://clojure.github.io/clojure/clojure.repl-api.html). Use `(require '[clojure.repl :refer :all])` to make all commands avaialbel.
 
@@ -15,7 +17,7 @@ When you run `clj` from the command line, there are some commands (defined in [c
 
 Special vars:
 
-- `*1`, `*2`, `*3` are lat, second, and third most recent values.
+- `*1`, `*2`, `*3` are last, second, and third most recent values.
 - `*e` the last exception.
 
 Additional commands from `clojure.java.javadoc` and `clojure.pprint`:
@@ -37,7 +39,7 @@ To Exit, type `Ctrl-D`.
 - `*ns*`: current namespace.
 - `ns foo`: create a new namespace and make it current.
 - `in-ns bar`: switch to a new namespace.
-- `require '[clojure.set :as cset :refere [uniion]]`: importe namespace and var.
+- `require '[clojure.set :as cset :refere [union]]`: importe namespace and var.
 
 ## nREPL
 
