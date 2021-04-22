@@ -2,7 +2,7 @@
 
 > > > Fundamentally, the reason programmers use the REPL for all these tasks is always the same: because they want a mix of automation and improvisation that can be provided neither by fully manual tools (such as dashboard, consoles, etc.) nor by fully automated ones (such as scripts), while keeping their workflow focused in one full-featured programming environmen. [Programming at the REPL](https://clojure.org/guides/repl/introduction)
 
-## Getting Started in REPL
+## 1 Getting Started in REPL
 
 REPL is a command-line interface to interact with a running Clojure program.
 
@@ -34,18 +34,18 @@ History avagiation
 
 To Exit, type `Ctrl-D`.
 
-## Namespace
+### 1.1 Namespace
 
 - `*ns*`: current namespace.
 - `ns foo`: create a new namespace and make it current.
 - `in-ns bar`: switch to a new namespace.
 - `require '[clojure.set :as cset :refere [union]]`: importe namespace and var.
 
-## nREPL
+### 1.2 nREPL
 
 `nREPL` stands for "network REPL". It is a message-based client-server REPL service. A client implements Read, Print, and Loop. The server handles the Evaluation and can do more such as looking up documentation, inspecting running program etc.
 
-## REPL Phases
+### 1.3 REPL Phases
 
 A REPL has the following phases:
 
@@ -58,26 +58,38 @@ A REPL has the following phases:
 - `:read-eval-result`
 - `:print-eval-result`
 
-## Reader
+## 2 Reader
 
-Clojure is defined in terms of the evaluation of data structures and not in terms of the syntax of character streams/files. It is the task of the reader, defined by `read` function, to parse the text and produce the data structure the compiler will see.
+Clojure is a homoiconic language that Clojure programs are represented by Clojure data structrues. Clojure is defined in terms of the evaluation of data structures and not in terms of the syntax of character streams/files. It is the task of the reader, defined by `read` function, to parse the text (forms represented by a sequence of characters) and produce the data structures (symbols, lists, vectors, maps etc.) the compiler will see.
 
-The text has the following forms:
+The reader reads the following forms:
 
-- symbols: may be qualified by namespace or Java package
-- literals: strings, numbers, characters, `nil`, `true`, `false`, symbolic values (`##Inf`, `##-Inf`, and `##NaN`), keywords.
+### 2.1 Symbols and Literals
+
+- symbols: may be qualified by namespace or Java package. `.`, `/` and `:` have special meanings.
+- literals: strings, numbers (`Long`, `BigInt`, `Double`, `BigDecimal`, ratio), characters (preceded by a backslash), `nil`, `true`, `false`, symbolic values (positive infinity `##Inf`, negative infinity`##-Inf`, and not-a-number `##NaN`), and keywords.
+
+A keyword that begins with two colons is auto-resolved in the current namespace to a qualified keyword.
+
+- If the keyword is unqualified, the namespace will be the current namespace. In user, `::rect` is read as `:user/rect`.
+- If the keyword is qualified, the namespace will be resolved using aliases in the current namespace. In a namespace where `x` is aliased to `example`, `::x/foo` resolves to `:example/foo`.
+
+### 2.2 Sequence or Special Forms
+
 - Lists: forms enclosed in parentheses.
 - Vectors: forms enclosed in square brackets.
-- Maps: key/value paris enclosed in braces. May be qualified by a namespace `#:ns`.
+- Maps: key/value paris enclosed in braces. May be qualified by a namespace `#:ns`. `#::` can be used to auto-resolve namespaces with the same semantics as auto-resolved keywords.
 - Sets: forms enclosed in `#{}`.
-- `deftype`, `defrecord` and constructor calls.
+- `deftype`, `defrecord` and constructor calls. They are called by fully qualified name preceded by `#` and followed by a vector or a map. For example, `#my.class[:a : c]` or `#my.record{:a 1, :b 2}`
 
-The behavior of the reader is driven by macro characters tool
+### 2.3 Macro Characters
 
-- Quote `'`
-- Character `\`
+The behavior of the reader is driven by a combination of built-in constructs and an extension system called the `read table`. Entries in the read table provide mappings from certain characters, called `macro characters`, to specific reading behavior, called `reader macros`. Unless indicated otherwise, macro characters cannot be used in user symbols. You can think them as syntax sugars provided by the reader.
+
+- Quote `'form` => `(quote form)`
+- Character `\`: `\newline`, `\space`, `\tab`, `\formfeed`, `\backspace`, and `\return`. A Unicode literal is of the form `\uNNNN`.
 - Comment `;`
-- Defer `@`
+- Defer `@form` => `(deref form)`
 - Metadata `^` -- use a map or type shortcut `^String` and dynamic shortcut `^:dynamic`
 - Dispatch `#`: use for set, regex, var-quote `#'`, anonymous function, `#()`, ignore next form `#_`.
 - Syntax quote: the backquote character, unquote `~`, and unquote-splicing `~@`.
