@@ -1,13 +1,13 @@
-# Deps and CLI
+# REPL, Deps and CLI
 
-This article summarizes the Clojure CLI tools from the following resources:
+This article summarizes the Clojure REPL and CLI tools from the following resources:
 
-- [The REPL and main entry points](https://clojure.org/reference/repl_and_main)
+- [The REPL and main](https://clojure.org/reference/repl_and_main)
+- [REPL Introduction](https://clojure.org/guides/repl/introduction)
 - [Deps and CLI](https://clojure.org/reference/deps_and_cli)
 - [What are the Clojure tools](https://betweentwoparens.com/what-are-the-clojure-tools)
 
-## 1 Overview
-
+REPL is a command-line interface to interact with a running Clojure program.
 Clojure CLI tools or `tools-deps` are just an umbrella term consisting of following parts to resolve/download dependendencis and build classpath to run a program in the JVM.
 
 - `deps.edn` is an edn configuration file used to configure dependencies.
@@ -18,6 +18,70 @@ Clojure CLI tools or `tools-deps` are just an umbrella term consisting of follow
 There are many [build or project management tools](https://github.com/clojure/tools.deps.alpha/wiki/Tools) based on the above CLI tools.
 
 You install the tools via `brew install clojure/tools/clojure`. It shows as `clojure` in `brew info` after installation.
+
+## 1 REPL
+
+> > > Fundamentally, the reason programmers use the REPL for all these tasks is always the same: because they want a mix of automation and improvisation that can be provided neither by fully manual tools (such as dashboard, consoles, etc.) nor by fully automated ones (such as scripts), while keeping their workflow focused in one full-featured programming environmen. [Programming at the REPL](https://clojure.org/guides/repl/introduction)
+
+### 1.1 Launching
+
+- You run `clj` from the command line that invokes `clojure.main`.
+- To run a file full of Clojure code as a script, pass the path to the script to `clojure.main` as an argument: `clj -M /path/to/myscript.clj`.
+- To pass in arguments to a script, pass them in as further arguments like `clj -M /path/to/myscript.clj arg1 arg2 arg3`. The arguments will be provided to your program as a seq of strings bound to the var `*command-line-args*`.
+
+### 1.2 Tool Commands
+
+There are some tool commands (defined in [clojure.repl](https://clojure.github.io/clojure/clojure.repl-api.html) available when you use `(require '[clojure.repl :refer :all])` to make them avaialbel.
+
+- `(source name)`: show the source code of a symbol.
+- `(apropo "something")`: return a seq of all definitions (by name) that match the pattern.
+- `(doc name)`: print documentation for a var, a special form or a namespace. For example: `(doc doc)`. `(doc str)`, `(doc clojure.repl)`.
+- `(find-doc "text")` or `(find-doc #"(?i)text")`: find in the description for `text` or case-insenstive `text`.
+- `(dir ns)`: show a list of functions and vars in a namespace.
+- `(pst e)`: print exception mesage and stacktrace.
+
+Special vars:
+
+- `*1`, `*2`, `*3` are last, second, and third most recent values.
+- `*e` the last exception.
+
+Additional commands from `clojure.java.javadoc` and `clojure.pprint`:
+
+- `(javadoc name)`: show doc of a Java class.
+- `(pprint expr)`: show a pretty formatted value.
+- `(pp)`: pretty print the previous result, same as `(pprint *1)`
+
+### 1.3 History avagiation
+
+- Previous: Ctrl + P, Up arrow.
+- Next: Ctrl + N, Down arrow.
+- Search: Ctrl + R, press Ctrl + R to cycle through the matches, Enter to select one.
+
+To Exit, type `Ctrl-D`.
+
+### 1.4 Namespace
+
+- `*ns*`: current namespace.
+- `ns foo`: create a new namespace and make it current.
+- `in-ns bar`: switch to a new namespace.
+- `require '[clojure.set :as cset :refere [union]]`: importe namespace and var.
+
+### 1.5 nREPL
+
+`nREPL` stands for "network REPL". It is a message-based client-server REPL service. A client implements Read, Print, and Loop. The server handles the Evaluation and can do more such as looking up documentation, inspecting running program etc.
+
+### 1.6 REPL Phases
+
+A REPL has the following phases:
+
+- `:read-source`
+- `:macro-syntax-check`
+- `:macroexpansion`
+- `:compile-syntax-check`
+- `:compilation`
+- `:execution`
+- `:read-eval-result`
+- `:print-eval-result`
 
 ## 2 CLI
 
