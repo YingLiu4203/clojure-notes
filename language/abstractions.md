@@ -13,7 +13,9 @@ The `multimethod`, `protocol` and datatype features of `deftype`, `defrecord` an
 
 ## 2 Built-in Abstractions and Types
 
-Clojure has 7 built-in abstractoins: `collection`, `sequence`, `associative`, `indexed`, `stack`, `set`, and `sorted`. There are predicates to check the interface and type: `coll?`, `associative?`, `indexed?`, `sorted?`, `seq?`, `list?`, `vector?`, `set?`, and `map?`.
+Clojure has 7 built-in collection abstractoins: `collection`, `sequence`, `associative`, `indexed`, `stack`, `set`, and `sorted`. These abstractions are specified by host interfaces.
+
+There are predicates to check the interface and type: `coll?`, `associative?`, `indexed?`, `sorted?`, `seq?`, `list?`, `vector?`, `set?`, and `map?`.
 
 The built-in implemenation of 4 basic data structure types `list`, `vector`, `map`, and `set` has two distinctive characteristics:
 
@@ -120,3 +122,30 @@ Essentially the `multimethod` solving the `branch-and-call` cases where you need
 Multimethods dispatch is based on derivation and uses `isa?` rather than `=` when testing for dispatch value matches. By default, the hierarchy is globalled defined. Use `make-hierarchy` to create a hierarch object that can be use as a frist argurment of the above functions.
 
 Derivation is determined by a combination of either Java inheritance (for class values), or using Clojure’s ad hoc hierarchy system. The hierarchy system supports derivation relationships between names (either symbols or keywords), and relationships between classes and names. The `derive` function creates these relationships, and the `parents`, `ancestors` and `isa?` functions query the hierarchy.
+
+## 4 Protocols
+
+### 4.1 Motivations
+
+- Provide a high-performance, dynamic polymorphism construct for Clojure.
+- Work as host's inteface: specification only (no implementation), a type can implement multiple protocols.
+- Avoid interface's drawback: can be extended independently, not an `isa` relationship, no hierarchy.
+- Support the 90% case of multimethods because dispatching by type is the most common use case. Each multimethod defines one operation, a protocol can include a set of related operations.
+
+### 4.2 Basics
+
+A protocol is a named set of named methods and their signatures, defined using `defprotocol` and has the following features:
+
+- There are no implementations.
+- It yields a set of polymorphic functions that dispatch on the type of the first argument.
+- It is dynamic and doesn't require AOT compilation.
+- It creates a host's interface with the same fully qualified name.
+- You can implement a protocol on `nil`.
+
+The `deftype`, `defrecord` or `reify` support protocol directly.
+
+Use `extend` to extend a type to implement protocols using `protocl + function map` pairs. `extend-type` and `extend-protocol` are convenience macros.
+
+If a protocol ahs `:extend-via-metadata true`, then values can extend the protocol by adding metadata where keys are fully-qualified protocol function symbols and values are function implementations.
+
+Protocol implementations are checked first for direct definitions (`defrecord`, `deftype`, `reify`), then metatdata defintions, then external extensions (`extend`, `extend-type`, `extend-protocol`).
