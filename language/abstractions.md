@@ -127,6 +127,8 @@ Derivation is determined by a combination of either Java inheritance (for class 
 
 ### 4.1 Motivations
 
+The so-called `expression problem` can be described as providing implementations of new interfaces to old types. Clojure provides `protocol` and reserves `interface` for Java. The motivations behind `protocol` are:
+
 - Provide a high-performance, dynamic polymorphism construct for Clojure.
 - Work as host's inteface: specification only (no implementation), a type can implement multiple protocols.
 - Avoid interface's drawback: can be extended independently, not an `isa` relationship, no hierarchy.
@@ -137,15 +139,21 @@ Derivation is determined by a combination of either Java inheritance (for class 
 A protocol is a named set of named methods and their signatures, defined using `defprotocol` and has the following features:
 
 - There are no implementations.
-- It yields a set of polymorphic functions that dispatch on the type of the first argument.
+- It consists of one or more methods, where each method can have multiple arities with at least on argument.
+- It yields a set of polymorphic functions that dispatch on the type of the first argument, corresponding to the `this` in Java and `self` in Ruby and Python. This is most hosts offer and optimize.
 - It is dynamic and doesn't require AOT compilation.
 - It creates a host's interface with the same fully qualified name.
 - You can implement a protocol on `nil`.
+- You are not required to implement all methods. Clojure throws an exception if an unimplemented method is called.
 
-The `deftype`, `defrecord` or `reify` support protocol directly.
+The `deftype`, `defrecord` or `reify` support protocol directly. Use `PascalCase` for protocol and type names because they compiled down to native JVM interfaces and classes.
 
-Use `extend` to extend a type to implement protocols using `protocl + function map` pairs. `extend-type` and `extend-protocol` are convenience macros.
+Use `extend` to extend a type to implement protocols using `protocol + function map` pairs. `extend-type` (one type, multiple protocols) and `extend-protocol` (one protocol, multiple types) are convenience macros. You can extend a Java class to support protocols.
 
 If a protocol ahs `:extend-via-metadata true`, then values can extend the protocol by adding metadata where keys are fully-qualified protocol function symbols and values are function implementations.
 
 Protocol implementations are checked first for direct definitions (`defrecord`, `deftype`, `reify`), then metatdata defintions, then external extensions (`extend`, `extend-type`, `extend-protocol`).
+
+## 5 Datatypes
+
+A Clojure type is a Java class defined by `defrecord` or `deftype`. The type name should be in PascalCase. Each argument defiens a `public` and `final` field. You can optinally hint the type of field using metadata.
