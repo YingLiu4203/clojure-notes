@@ -65,6 +65,8 @@ User tags must contain a prefix component, which must be owned by the user (e.g.
 
 `;` the line is a comment. `#_` discard the next element.
 
+`#object` is read as a generic TaggedLiteral object. What's the meaning ?
+
 ### 1.5 Reader Conditionals
 
 Clojure 1.7 introduced a new extension `.cljc` for portable files that can be loaded by multiple Clojure platforms.
