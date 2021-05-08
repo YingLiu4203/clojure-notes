@@ -85,7 +85,59 @@ A REPL has the following phases:
 
 ## 2 CLI
 
+### 2.1 Basics
+
 Essentially the command is `java [java-opt*] -cp classpath clojure.main [clj-opt*] [main-opt] [arg*]`. `clj` starts a REPL using `clojure` that executes `clojure.main` to run a REPL or execute a function/script.
+
+Using a `deps.edn` file (or files) that consists of configuration maps, you tell Clojure where your source code resides and what libraries you need. The keywords defined in maps are called `aliases` that are easy to be used in command line. Clojure will then calculate the full set of required libraries and a classpath, caching expensive parts of this process for better performance.
+
+### 2.2 Main Usages
+
+Use `clojure --help` to show syntax.
+
+- `clj [clj-opt*] [-Aaliases] [init-opt*]`: start a REPL.
+- `clojure [clj-opt*] -X[aliases] [a/fn] [kpath v]*`: exec a function.
+- `clojure [clj-opt*] -M[aliases] [init-opt*] [main-opt] [arg*]`: ran a `-main` function.
+- `clojure [clj-opt*] -P [other exec opts]`: prepare or dry run. Downloads libs, cache paths, but don't exec).
+
+The execution use `deps` and `paths` where
+
+- `deps` includes `:deps`, `:extra-deps`, `replace-deps`.
+- `paths` include `:path`, `:extra-paths`, `replace-paths`.
+
+`clj-opt`:
+
+- `-Jopt`: Pass opt through in `java_opts`, ex: `-J-Xmx512m`
+- `-Sdeps EDN`: Deps data to use as the last deps file to be merged
+- `-Spath` Compute classpath and echo to stdout only
+- `-Spom` Generate (or update) pom.xml with deps and paths
+- `-Stree` Print dependency tree
+- `-Scp CP` Do NOT compute or cache classpath, use this one instead
+- `-Srepro` Ignore the ~/.clojure/deps.edn config file
+- `-Sforce` Force recomputation of the classpath (don't use the cache)
+- `-Sverbose` Print important path info to console
+- `-Sdescribe` Print environment and command parsing info as data
+- `-Sthreads` Set specific number of download threads
+- `-Strace` Write a trace.edn file that traces deps expansion
+- `--` Stop parsing dep options and pass remaining arguments to clojure.main
+- `--version` Print the version to stdout and exit
+- `-version` Print the version to stderr and exit
+
+`init-opt`:
+
+- `-i, --init path` Load a file or resource
+- `-e, --eval string` Eval exprs in string; print non-nil values
+- `--report target` Report uncaught exception to "file" (default), "stderr", or "none"
+
+`main-opt`:
+
+- `-m, --main ns-name`: Call the -main function from namespace w/args
+- `-r, --repl`: Run a repl
+- `path`: Run a script from a file or resource
+- `-`: Run a script from standard input
+- `-h, -?, --help`: Print this help message and exit
+
+### 2.3 Execute a Function or `-main`
 
 To execute a function, use `clojure [clj-opt*] -X[aliases] [a/fn] [kpath v]*`. The `-X` is configured with an arg map with `:exec-fn` and `:exec-args` keys. The map is stored as an alias in `deps.edn`. The `[kpath v]*` can be a single key or a vector of keys that is used to `assoc-in` to the `:exec-args` map.
 
@@ -99,21 +151,9 @@ For example, with the definition:
                :config 456}}}}
 ```
 
-you can run `clj -X:my-fn :config 789` or `clj -X:my-fn '[:my :data]' 789`. The single quotes are required for strings, vectors, maps, sets and lists in command line. You can also execute a specific function direclty in command line such as `clj -X my.qualified/fn :config 789`.
+you can run `clj -X:my-fn :config 456` or `clj -X:my-fn '[:my :data]' 123`. The single quotes are required for strings, vectors, maps, sets and lists in command line. You can also execute a specific function direclty in command line such as `clj -X my.qualified/fn :config 456`.
 
-Use `-M` exec-opt to invoke `clojure.main` that calls a namespace with `-main` function or a Clojure script. The command is `clojure [clj-opt*] -M[aliases] [main-opts]`.
-
-The `clj-opt` could be:
-
-- `-i, --init`: load a file or resource
-- `e, --eval string`: evaluate expressions in string.
-- `--report target`: report uncaught exception to `file`(default), `stderr` or `none`.
-- `r, repl`: run a repl. If no options or args, this is the default.
-- `path`: run a script from a file or resource
-- `-m, --main`: a namesapce to find a `-main` function for execution
-- `-h, --help`: print help message
-
-To pass in arguments to a script, pass them in as futher argments when launching `clojure.main`. For example: `clj -M /path/to/script.clj arg1 arg2 arg3`. The arguments will be provided to your program as a seq of strings bound to the var `*command-line-args*`: `*command-line-args* => ("arg1" "arg2" "arg3")`.
+Use `-M` exec-opt to invoke `clojure.main` that calls a namespace with `-main` function or a Clojure script. To pass in arguments to a script, pass them in as futher argments when launching `clojure.main`. For example: `clj -M /path/to/script.clj arg1 arg2 arg3`. The arguments will be provided to your program as a seq of strings bound to the var `*command-line-args*`: `*command-line-args* => ("arg1" "arg2" "arg3")`.
 
 ## 3 Tool Execution
 
