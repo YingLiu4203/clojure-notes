@@ -31,7 +31,9 @@ For mutable data, define a var to hold a reference type value and use `swap!`, `
 
 ## Binding and Assignment
 
-By default Vars are static, but Vars can be marked as dynamic (`^:dynamic`) to allow per-thread bindings via the macro binding. Bindings created with `binding` is a per-thread binding that cannot be seen by any other thread.
+By default Vars are static. You can change the root value using `(alter-var-root #'name alter-fn)`.
+
+Vars can be marked as dynamic (`^:dynamic`) to allow per-thread bindings via the macro binding. Bindings created with `binding` is a per-thread binding that cannot be seen by any other thread.
 
 There are scenarios that one might wish to redefine static Vars within a context and Clojure provides the functions `with-redefs` and `with-redefs-fn` for such purposes.
 

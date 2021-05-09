@@ -1,5 +1,9 @@
 # Namespace
 
+## Basics
+
+Namespaces are global map objects that map var names to var objects. Not fully-qualified names are resovled to the current namespace. Var objects may have aliases. Compiled code uses fully-qualified references.
+
 ## Auto-resolved Keyword
 
 `::` is used to auto-resolve keyword in the current namespace. If no qualifier is specified, it will auto-resolve to the current namespace. If the keyword is qualified, the namespace will be resolved using aliases in the current namespace. For example, if the current namespace has an aliase `example` for `x`, then `::x/foo` is resovled as `:example/foo`. `::` is not available in edn.
