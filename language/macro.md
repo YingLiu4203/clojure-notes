@@ -2,15 +2,110 @@
 
 A macro is a special function that transforms Clojure data structure: the input is data structure and the output is data structure. A function has a metadata `:macro true` and is evaluated during compilation.
 
+Resources:
+
+- [Macros Reference](https://clojure.org/reference/macros)
+
+## 1 Basics
+
 At a high level, Clojure program has four phases.
 
-- reading: the `reader` converts a string into Clojure data structures. Reader macros are expanded.
+- Reading: the `reader` converts a string into Clojure data structures. Reader macros are expanded.
 - Macro expansion: macros are evaluated/expanded recursively. Its output is sent back to reading phase untill all forms are fixed.
 - Host code generation: the data sturctures are compiled into host code.
 - Evaluation: execute host code. Clojure is a dynamic language. At runtime, `eval` can read, expand, compile and evaluate arbitrary code.
 
-Together, the macro expansion and host code generation form the compilation of Clojure source code. The two tricky facts about Clojure program execution are:
+Together, the macro expansion and host code generation form the compilation of Clojure source code. The tricky facts about Clojure program execution are:
 
-- a macro is a function executed in compilation and generates a textual data structure.
+- a macro is a regular function executed in compilation.
+- it takes a Clojure textual data structure (unevaluated) as input and generates a Clojure textual data structure. This is the so-called `homoiconicity`.
 - the generates data structures is the input to reading process until no more macro expansion required.
 - the `eval` at runtime involves all four phases.
+
+The fact that a macro is a regular function transforming the same Clojure data structure gives it an enormous power because of the rich functions available and the familiarity of the syntax.
+
+Clojure marcro is not a textual precessor like C preprocessor or Ruby `eval`. It is not a code geneeration that is executed in a discrete compilation step. It is not a compiler plugin or a set of compiler APIs.
+
+## 2 Debugging Macros
+
+- `macroexpand-1`: expand macro once.
+- `macroexpand`: expand all macros except nested form.
+- `macroexpand-all`: expand all macros including nested forms.
+
+## 3 Syntax
+
+Macros are regular functions that often return lists to represent futher calls such as functions, special forms, or other macros. Because a macro is a function that is executed at compile time, it follows the same runtime evaluation rules:
+
+- literals (e.g., intergers, strings, keywards, vectors) are evaluated to themselves.
+- Symbols resolve to a value in a var form some spaces.
+- Lists denote calls, either to functions, special forms, or macros.
+
+There are forms/elements that you want to control the evaluation. Clojure provides three tools to help writing macros.
+
+- `syntax-quote`: it is similar to quoting but have two important differences.
+  - `syntax-quote` qualifies symbols with its corresponding namespace.
+  - `syntax-quote` allows `unquoting` in the syntax-quoted form.
+- `unquote`: evalute some elements with `~`. When you unquote a list or vector, you unquote the entire form.
+- `unquote-splicing`: `~@` unpacking the contents of its list into multiple expressions when evaluated.
+
+Usually you form a skeleton of a form with `syntax-quote` and selectively fill in key parameterized parts with values and evaluated expressions of the embedded `unquote` and `unquote-splicing`.
+
+The three tools are just reader macros that are swapped in by the reader in place of their various syntaxes.
+
+The clever quoting and unquoting inside a `syntax-quote` form:
+
+- `~'name`: specify an unqualified `name` symbol.
+- `'~name`: quoting the `~name` expression returns the data structure without evaluation, i.e., if `name` is a macro arugment, then the original expression argument is the binding value of `~name`, finally the quoted expression is evaluated.
+
+If a result of an unquote operation is a symbol, that symbol won't be namespaced by the surrounding quoted form. In the `~'name` case, the `~` evalutes the follwoing expression `'name`, witch returns `name`. Therefore the expression `'~'name` returns `(quote name)`.
+
+## 4 Constrains and Best Practices
+
+Macros operate at compile time and have no access to runtime information such as the current runtime values of a var. A macro sees only unevaluated data structures read from source code.
+
+Macros don't exist at runtime. Don't use its value at runtime. For example, as an argument to a high-order functions.
+
+Macros should be used only when you need your own language constructs. They shouldn't be used where a function can be effective. Some applicable cases for macros:
+
+- special evaluation semantics
+- customized syntax for frequent patterns or domain-specific notation.
+- precomputing intermediate data at compile time.
+
+Some best practices are:
+
+- put local bindings as the first argument in a vector
+- use a name prefix `def` for macros defining a `var`, first argument should be the name. define one `var` per macro form.
+- No complex behavior, delegate most work to functions and keep the macro form simple.
+- `lists*` is often simpler than the syntax-quoting.
+
+## 5 Hygiene
+
+Code generated by macro will often be embedded in other code, and often will have user-defined code embedded within the generated code. Bindings in macro may collide with outer or inner context of the user code. Macros that avoid the binding collision issues are called `hygienic` macros.
+
+The `gensym` function returns a symbol that is guaranteed to be unique. It has an optional string arugment that is used as a prefix of the generated symbol. A shorthand way is to append an `#` to a symbol inside a `syntax-quote`. It will expand to a unique symbol. Inside a single syntax-quote form, the reference to the same gensym expands to the same symbol.
+
+When you need to set up a binding that is visible to the caller of the macro, you can document the binding name. This is called `anaphoric`. A alternative way is to let user specify the name as an argument.
+
+An insidious problem with macros is double evaluation. It happens when you expand an arugment, i.e., the `~arg` appears two or more times. To avoid it , put it into a local binding: `let [x# ~x]` and use `x#` in the macro. A better solution is to define a function to avoid the `let`.
+
+## 6 Implict Arguments: `&env` and `&form`
+
+`&env` contains a map whose keys are the names of current locals. It can be used for debugging or expression optimization.
+
+`&from` is the whole form being macro-expanded. It has all the metadata and reader information such as line number. It is useful for producing error messages, preserving type hints
+
+## 7 Built-in Macros
+
+All of the following macros are documented on the [API page](https://clojure.github.io/clojure/).
+
+- Creating macros: `defmacro` `definline` `macroexpand-1` `macroexpand`
+- Branching: `and` `or` `when` `when-not` `when-let` `when-first` `if-not` `if-let` `cond` `condp`
+- Looping (see also Sequences): `for` `doseq` `dotimes` `while`
+- Working with vars: `ns` `declare` `defn` `defmacro` `definline` `defmethod` `defmulti` `defn-` `defonce` `defstruct`
+- Arranging code differently: `..` `doto` `->` `->>`
+- Dynamic scopes: `binding` `locking` `time` `with-in-str` `with-local-vars` `with-open` `with-out-str` `with-precision`
+- Creating lazy things: `lazy-cat` `lazy-cons` `delay`
+- Java interop macros: `..` `amap` `areduce` `gen-class` `gen-interface` `proxy` `proxy-super` `memfn`
+- Documenting code: `assert` `comment` `doc`
+- Transactions: `dosync` `io!`
+- A few special forms are actually implemented as macros, primarily to provide destructuring: `fn` `let` `loop`
