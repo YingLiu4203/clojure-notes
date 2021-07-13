@@ -2,7 +2,7 @@
 
 ## 1 Basics
 
-Namespaces are global map objects that map var names to var objects, or symbols to class objects. Not fully-qualified names are resovled to the current namespace. Var objects may have aliases. Compiled code uses fully-qualified references that multiple aliases point to the same var object.
+Namespaces are global map objects that map var names (symbols) to var objects, or symbols to class objects. Not fully-qualified names are resovled to the current namespace. Var objects may have aliases. Compiled code uses fully-qualified references that multiple aliases point to the same var object.
 
 ### 1.1 Current Namespace
 
@@ -32,11 +32,13 @@ Similarly, `#::{}` resolves the current namespace. `#::alias` works for namespac
 
 ## 2 Using Namespaces
 
-### 2.1 `refer`
+### 2.1 Creating Mappings Using `def`, `refer` and `import`
 
-Use `refer` to add mappings to the vars of a loaded namespace. By default it adds mappings of all vars of a namespace. You can specify the `:exclude`, `:only` and `:rename` to customize the mappings.
+`def` creates a mapping from a symbol to a var in the current namespace.
 
-`refer` is rarely used dirctly. Its effects and options are availabe through `use`.
+Use `refer` to add mappings to the vars of a loaded namespace. By default it adds mappings of all vars of a namespace. You can specify the `:exclude`, `:only` and `:rename` to customize the mappings. `refer` is rarely used dirctly. Its effects and options are availabe through `use`.
+
+Use `import` to map symbols to Java classes and interfaces. For example: `(import 'java.util.Date 'java.text.SimpleDateFormat)`. As `refer` or `use`, you can use a list to add mutiple mappings with a common prefix. For example: `(import '(java.util Arrays Collections))`.
 
 ### 2.2 `require`
 
@@ -58,9 +60,19 @@ When multiple namespaces share a common prefix, you can put namespaces in a list
                [set :exclude (join)]))
 ```
 
-### 2.4 `import`
+### 2.4 Get Info about Mappings, Aliases and Namespaces
 
-Use `import` to map symbols to Java classes and interfaces. For example: `(import 'java.util.Date 'java.text.SimpleDateFormat)`. As `refer` or `use`, you can use a list to add mutiple mappings with a common prefix. For example: `(import '(java.util Arrays Collections))`.
+- Use `ns-map` to find a map of all the mappigs for a namespace.
+- Use `ns-aliases` to find all aliases of a namespace.
+- Use `all-ns` to list all loaded namespaces.
+- Use `find-ns` to search a namespace.
+
+### 2.5 Problems with Namespace
+
+- start time is slow: bootstraping `clojure.core` is slow.
+- `Var.getRawRoot` overhead is high.
+- Heap use. Namesapces are atomic. A basic REPLE uses over 17MB of heap.
+- Impedes static analysis because a lot of indirections invocation.
 
 ## 3 Best Practices
 

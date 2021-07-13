@@ -35,6 +35,11 @@ By default Vars are static. You can change the root value using `(alter-var-root
 
 Vars can be marked as dynamic (`^:dynamic`) to allow per-thread bindings via the macro binding. Bindings created with `binding` is a per-thread binding that cannot be seen by any other thread.
 
+Clojure compiler emits different code with using a dynamic `Var`:
+
+- Static vars are dereferenced using `Var.getRawRoot()`. It uses root binding.
+- Dynamic vars are defreferenced using `Var.get()`. It uses thread-local binding and is slow.
+
 There are scenarios that one might wish to redefine static Vars within a context and Clojure provides the functions `with-redefs` and `with-redefs-fn` for such purposes.
 
 Functions defined with `defn` are stored in Vars, allowing for the re-definition of functions in a running program via `def` or `defn` the name again.
