@@ -8,11 +8,12 @@ This article summarizes the Clojure REPL and CLI tools from the following resour
 - [What are the Clojure tools](https://betweentwoparens.com/what-are-the-clojure-tools)
 
 REPL is a command-line interface to interact with a running Clojure program.
+
 Clojure CLI tools or `tools-deps` are just an umbrella term consisting of following parts to resolve/download dependendencis and build classpath to run a program in the JVM.
 
 - `deps.edn` is an edn configuration file used to configure dependencies.
 - `tools.deps.alpha` is a library that reads `deps.edn` and resolves dependency graphs and build classptaths that can utilize both Maven or other providers of code or artifacts. It doesn't provide build and project management.
-- `clojure` or `clj` are bash scripts to run Clojure programs on the JVM. `clj` wraps `clojure` (another bash script) with `readline` support to make it easier to type manually in REPL. Under the hood, `clojure` uses `deps.edn` and `tools.deps.alpha`.
+- `clojure` or `clj` are bash scripts to run Clojure programs on the JVM. `clj` wraps `clojure` (another bash script) with `readline` support to make it easier to type manually in REPL. `Clojure` is often used in a CI or production setting. Under the hood, `clojure` uses `deps.edn` and `tools.deps.alpha`.
 - System-specific installers for downloading the tools.
 
 There are many [build or project management tools](https://github.com/clojure/tools.deps.alpha/wiki/Tools) based on the above CLI tools.
@@ -87,7 +88,7 @@ A REPL has the following phases:
 
 ### 2.1 Basics
 
-Essentially the command is `java [java-opt*] -cp classpath clojure.main [clj-opt*] [main-opt] [arg*]`. `clj` starts a REPL using `clojure` that executes `clojure.main` to run a REPL or execute a function/script.
+Essentially the command is `java [java-opt*] -cp classpath clojure.main [clj-opt*] [main-opt] [arg*]`. `clj` starts a REPL using `clojure` that executes `clojure.main` to run a REPL or executes and interactives a function/script.
 
 Using a `deps.edn` file (or files) that consists of configuration maps, you tell Clojure where your source code resides and what libraries you need. The keywords defined in maps are called `aliases` that are easy to be used in command line. Clojure will then calculate the full set of required libraries and a classpath, caching expensive parts of this process for better performance.
 
